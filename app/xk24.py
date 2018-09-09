@@ -28,6 +28,8 @@ class XK24(Qobject):
         report = struct.unpack('33B', binreport)
         self.keyboardDataReceived.emit(report[3:7])
 
-    @pyqtSlot()
-    def setBacklight(self, button, state):
-        pass
+    @pyqtSlot(int, int)
+    def setBacklight(self, key, state):
+        report = [0, 181, key, state] + [0] * 32
+        binreport = struct.pack('36B', *report)
+        self.keyboard.write(binreport, b'\x0b')

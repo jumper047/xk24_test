@@ -3,7 +3,7 @@ from PyQt5.QtCore import QObject, QThread, QTimer, pyqtSignal, pyqtSlot
 
 class Controller(QObject):
 
-    setBacklightSignal = pyqtSignal(object)
+    setBacklightSignal = pyqtSignal(int, int)
 
     def __init__(self, vKeyboard, errWinodw, hidObj):
         super(Controller, self).__init__()
@@ -27,7 +27,19 @@ class Controller(QObject):
 
     @pyqtSlot(str, str)
     def setBacklight(self, key, action):
-        self.setBacklightSignal.emit(data)
+        key_b = int(key)
+        key_r = int(key) + 32
+        if action == "Синий":
+            action_b = 1
+            action_r = 0
+        elif action == "Красный":
+            action_b = 0
+            action_r = 1
+        elif action == "Выкл.":
+            action_b = 0
+            action_r = 0
+        self.setBacklightSignal.emit(key_b, action_b)
+        self.setBacklightSignal.emit(key_r, action_r)
 
     @pyqtSlot(object)
     def setKeyboardState(self, data):
