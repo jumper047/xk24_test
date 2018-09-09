@@ -31,4 +31,10 @@ class Controller(QObject):
 
     @pyqtSlot(object)
     def setKeyboardState(self, data):
-        pass
+        keys_state = []
+        for byte in data:
+            for place in range(0, 6):
+                keys_state.append(byte & 1 << place)
+
+        for key, state in zip(self.vKeyboard.keys, keys_state):
+            key.setDown(bool(state))

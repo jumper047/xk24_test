@@ -15,7 +15,7 @@ class VirtualKeyboard(QWidget):
     def initUi(self):
         self.setWindowTitle("Тест клавиатуры XK24")
         self.setGeometry(400, 150, 200, 400)
-        self.keyboard = dict()
+        self.keys = []
         self.createKeyboardLayout()
 
     def createKeyboardLayout(self):
@@ -24,7 +24,7 @@ class VirtualKeyboard(QWidget):
         for column in range(0, 4):
             for row in range(0, 6):
                 key = VirtualKey(self, str(buttonNumber))
-                self.keyboard[buttonNumber] = key
+                self.keys.append(key)
                 layout.addWidget(key, row, column)
                 buttonNumber += 1
             buttonNumber += 2
