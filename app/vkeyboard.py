@@ -51,19 +51,21 @@ class VirtualKey(QPushButton):
         self.colors = {"Синий": 'QPushButton {background-color: #4da6ff;}',
                        "Красный": 'QPushButton {background-color: #ff4d4d;}',
                        "Выкл.": ''}
+        self.currentState = "Выкл."
 
     def showBacklightMenu(self, point):
         self.backlightMenu.popup(self.mapToGlobal(point))
 
     def processBacklight(self, action):
-        self.setStyleSheet(self.colors[action.text()])
         key = self.text()
-        self.backlightSelected.emit(key, action.text())
+        color = action.text()
+        if color != self.currentState:
+            self.setStyleSheet(self.colors[action.text()])
+            self.backlightSelected.emit(key, action.text())
 
     def eventFilter(self, obj, event):
         if event.type() in (QEvent.MouseButtonPress, QEvent.MouseButtonDblClick)\
                 and event.button() == Qt.LeftButton:
-            print("Left key interrupted")
             return True
         else:
             return super(VirtualKey, self).eventFilter(obj, event)
@@ -77,8 +79,6 @@ class NoKeyboardWindow(QWidget):
         layout = QVBoxLayout()
         label = QLabel("Клавиатура не подключена")
         button = QPushButton("Выход")
-        button.setStyleSheet(
-            'QPushButton {color: red;}')
         layout.addWidget(label)
         layout.addWidget(button)
 
@@ -90,7 +90,8 @@ class NoKeyboardWindow(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    # window = NoKeyboardWindow()
+    window2 = NoKeyboardWindow()
     window = VirtualKeyboard()
     window.show()
+    window2.show()
     sys.exit(app.exec_())
