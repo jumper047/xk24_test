@@ -1,9 +1,9 @@
 import sys
 
 from PyQt5.QtCore import QEvent, Qt, pyqtSignal
-from PyQt5.QtWidgets import (QAction, QApplication, QButtonGroup, QGridLayout,
-                             QLabel, QMenu, QPushButton, QSizePolicy,
-                             QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QButtonGroup,
+                             QGridLayout, QLabel, QMenu, QPushButton,
+                             QSizePolicy, QVBoxLayout, QWidget)
 
 
 class VirtualKeyboard(QWidget):
@@ -23,7 +23,7 @@ class VirtualKeyboard(QWidget):
         buttonNumber = 0
         for column in range(0, 4):
             for row in range(0, 6):
-                key = VirtualKey(self, str(buttonNumber))
+                key = VirtualKey(str(buttonNumber))
                 self.keys.append(key)
                 layout.addWidget(key, row, column)
                 buttonNumber += 1
@@ -35,22 +35,30 @@ class VirtualKey(QPushButton):
 
     backlightSelected = pyqtSignal(str, str)
 
-    def __init__(self, controller, number):
+    def __init__(self,  number):
         super(VirtualKey, self).__init__(number)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.installEventFilter(self)
 
         self.backlightMenu = QMenu()
-        self.backlightMenu.addAction(QAction("Синий", self))
-        self.backlightMenu.addAction(QAction("Красный", self))
-        self.backlightMenu.addAction(QAction("Выкл.", self))
+        self.backlightMenu.addAction("Синий")
+        self.backlightMenu.addAction("Красный")
+        self.backlightMenu.addAction("Выкл.")
         self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.showMenu)
+        self.customContextMenuRequested.connect(self.showBacklightMenu)
+        self.backlightMenu.triggered.connect(self.processBacklight)
 
-    def showMenu(self, point):
-        action = self.backlightMenu.exec_(self.mapToGlobal(point)).text()
+        self.colors = {"Синий": 'QPushButton {background-color: #4da6ff;}',
+                       "Красный": 'QPushButton {background-color: #ff4d4d;}',
+                       "Выкл.": ''}
+
+    def showBacklightMenu(self, point):
+        self.backlightMenu.popup(self.mapToGlobal(point))
+
+    def processBacklight(self, action):
+        self.setStyleSheet(self.colors[action.text()])
         key = self.text()
-        self.backlightSelected.emit(key, action)
+        self.backlightSelected.emit(key, action.text())
 
     def eventFilter(self, obj, event):
         if event.type() in (QEvent.MouseButtonPress, QEvent.MouseButtonDblClick)\
@@ -69,6 +77,8 @@ class NoKeyboardWindow(QWidget):
         layout = QVBoxLayout()
         label = QLabel("Клавиатура не подключена")
         button = QPushButton("Выход")
+        button.setStyleSheet(
+            'QPushButton {color: red;}')
         layout.addWidget(label)
         layout.addWidget(button)
 
@@ -80,6 +90,7 @@ class NoKeyboardWindow(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = NoKeyboardWindow()
+    # window = NoKeyboardWindow()
+    window = VirtualKeyboard()
     window.show()
     sys.exit(app.exec_())
