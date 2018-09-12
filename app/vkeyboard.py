@@ -15,7 +15,7 @@ class VirtualKeyboard(QtWidgets.QWidget):
                 self.err = ErrorWindow("Клавиатура не подключена.")
                 return None
         except IOError:
-            err = ErrorWindow("Ошибка связи с клавиатурой")
+            self.err = ErrorWindow("Ошибка связи с клавиатурой")
             return None
 
         self.initUi()
