@@ -5,13 +5,12 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 import hidapi
 
 
-class XK24(Qobject):
+class XK24(QObject):
 
     keyboardDataReceived = pyqtSignal(object)
 
     def __init__(self):
         super(XK24, self).__init__()
-        self.keyboard = None
         self.VID = 1523
         self.PID = 1029
 

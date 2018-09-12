@@ -1,41 +1,40 @@
 import sys
 
-from PyQt5.QtCore import QEvent, Qt, QThread, QTimer, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import (QAction, QActionGroup, QApplication, QButtonGroup,
-                             QGridLayout, QLabel, QMenu, QPushButton,
-                             QSizePolicy, QVBoxLayout, QWidget)
+from PyQt5 import QtCore, QtWidgets
+
+POLL_FREQUENCY = 200
 
 
-class VirtualKeyboard(QWidget):
+class VirtualKeyboard(QtWidgets.QWidget):
 
-    def __init__(self):
+    def __init__(self, keyboard):
         super(VirtualKeyboard, self).__init__()
-        self.keyboard = xk24
+        self.keyboard = keyboard
         try:
             if not self.keyboard.initialize():
-                errWindow = NoKeyboardWindow("Клавиатура не подключена.")
+                self.err = ErrorWindow("Клавиатура не подключена.")
                 return None
         except IOError:
-            errWindow = NoKeyboardWindow("Ошибка связи с клавиатурой")
+            err = ErrorWindow("Ошибка связи с клавиатурой")
             return None
-        self.initUi()
 
-        self.thread = QThread()
-        self.timer = QTimer()
-        for key in self.keys.values():
+        self.initUi()
+        self.thread = QtCore.QThread()
+        self.timer = QtCore.QTimer()
+        for key in self.keys:
             key.backlightChanged.connect(self.keyboard.setBacklight)
-        self.keyboard.keyboardDataReceived.connect(self.setKeyboardState)
-        self.timer.timeout.connect(self.XK24.getKeysState)
+        self.keyboard.keyboardDataReceived.connect(self.setKeysState)
+        self.timer.timeout.connect(self.keyboard.getKeysState)
 
         self.keyboard.moveToThread(self.thread)
         self.thread.start()
-        self.timer.start(200)
+        self.timer.start(POLL_FREQUENCY)
 
     def initUi(self):
         self.setWindowTitle("Тест клавиатуры XK24")
         self.setGeometry(400, 150, 200, 400)
         self.keys = []
-        layout = QGridLayout()
+        layout = QtWidgets.QGridLayout()
         buttonNumber = 0
         for column in range(0, 4):
             for row in range(0, 6):
@@ -45,8 +44,10 @@ class VirtualKeyboard(QWidget):
                 buttonNumber += 1
             buttonNumber += 2
         self.setLayout(layout)
+        self.show()
 
-    def setKeyboardState(self, data):
+    @QtCore.pyqtSlot(object)
+    def setKeysState(self, data):
         keys_state = []
         for byte in data:
             for place in range(0, 6):
@@ -56,29 +57,32 @@ class VirtualKeyboard(QWidget):
             key.setDown(bool(state))
 
 
-class VirtualKey(QPushButton):
+class VirtualKey(QtWidgets.QPushButton):
 
-    backlightChanged = pyqtSignal(int, int, int)
+    backlightChanged = QtCore.pyqtSignal(int, int, int)
 
     def __init__(self,  number):
         super(VirtualKey, self).__init__(number)
-        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Minimum,
+                           QtWidgets.QSizePolicy.Minimum)
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.installEventFilter(self)
 
-        self.backlightMenu = QMenu()
+        self.backlightMenu = QtWidgets.QMenu()
         self.backlightMenu.addAction("Синий")
         self.backlightMenu.addAction("Красный")
         self.backlightMenu.addAction("Выкл.")
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+
         self.customContextMenuRequested.connect(self.showBacklightMenu)
         self.backlightMenu.triggered.connect(self.processBacklight)
 
-        # self.
         self.currentState = "Выкл."
 
+    @QtCore.pyqtSlot(object)
     def showBacklightMenu(self, point):
         self.backlightMenu.popup(self.mapToGlobal(point))
 
+    @QtCore.pyqtSlot(object)
     def processBacklight(self, action):
         colors4Button = {"Синий": 'QPushButton {background-color: #4da6ff;}',
                          "Красный": 'QPushButton {background-color: #ff4d4d;}',
@@ -87,25 +91,24 @@ class VirtualKey(QPushButton):
         key = self.text()
         color = action.text()
         if color != self.currentState:
-            self.setStyleSheet(self.colors[action.text()])
+            self.setStyleSheet(self.colors4Button[action.text()])
             self.backlightChanged.emit(int(key), *colors4USB[action.text()])
 
     def eventFilter(self, obj, event):
-        if event.type() in (QEvent.MouseButtonPress, QEvent.MouseButtonDblClick)\
-                and event.button() == Qt.LeftButton:
+        if event.type() in (QtCore.QEvent.MouseButtonPress, QtCore.QEvent.MouseButtonDblClick) and event.button() == QtCore.Qt.LeftButton:
             return True
         else:
             return super(VirtualKey, self).eventFilter(obj, event)
 
 
-class NoKeyboardWindow(QWidget):
+class ErrorWindow(QtWidgets.QWidget):
 
-    def __init__(self):
-        super(NoKeyboardWindow, self).__init__()
+    def __init__(self, message):
+        super(ErrorWindow, self).__init__()
 
-        layout = QVBoxLayout()
-        label = QLabel("Клавиатура не подключена")
-        button = QPushButton("Выход")
+        layout = QtWidgets.QVBoxLayout()
+        label = QtWidgets.QLabel(message)
+        button = QtWidgets.QPushButton("Выход")
         layout.addWidget(label)
         layout.addWidget(button)
 
@@ -114,12 +117,3 @@ class NoKeyboardWindow(QWidget):
 
         button.clicked.connect(sys.exit)
         self.show()
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window2 = NoKeyboardWindow()
-    window = VirtualKeyboard()
-    window.show()
-    window2.show()
-    sys.exit(app.exec_())
