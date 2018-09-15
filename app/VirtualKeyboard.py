@@ -9,28 +9,10 @@ POLL_FREQUENCY = 200
 
 class VirtualKeyboard(QWidget):
 
-    def __init__(self, keyboard):
+    def __init__(self):
         super(VirtualKeyboard, self).__init__()
-        self.keyboard = keyboard
-        try:
-            if not self.keyboard.initialize():
-                self.err = ErrorWindow("Клавиатура не подключена.")
-                return None
-        except IOError:
-            self.err = ErrorWindow("Ошибка связи с клавиатурой")
-            return None
-
         self.initUi()
-        self.thread = QThread()
-        self.timer = QTimer()
-        for key in self.keys:
-            key.backlightChanged.connect(self.keyboard.setBacklight)
-        self.keyboard.keyboardDataReceived.connect(self.setKeysState)
-        self.timer.timeout.connect(self.keyboard.getKeysState)
-
-        self.keyboard.moveToThread(self.thread)
-        self.thread.start()
-        self.timer.start(POLL_FREQUENCY)
+        self.errWin = ErrorWindow()
 
     def initUi(self):
         self.setWindowTitle("Тест клавиатуры XK24")
@@ -46,7 +28,6 @@ class VirtualKeyboard(QWidget):
                 buttonNumber += 1
             buttonNumber += 2
         self.setLayout(layout)
-        self.show()
 
     @pyqtSlot(object)
     def setKeysState(self, data):
