@@ -1,10 +1,9 @@
 #!/usr/bin/python3
-
 import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from app.vkeyboard import VirtualKeyboard
+from app.VirtualKeyboard import VirtualKeyboard
 from app.xk24 import XK24
 
 if __name__ == "__main__":
