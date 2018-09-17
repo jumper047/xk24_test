@@ -36,7 +36,7 @@ class VirtualKey(QPushButton):
         key = self.text()
         color = action.text()
         if color != self.currentState:
-            self.setStyleSheet(self.colors4Button[action.text()])
+            self.setStyleSheet(colors4Button[action.text()])
             self.backlightChanged.emit(int(key), *colors4USB[action.text()])
 
     def eventFilter(self, obj, event):
