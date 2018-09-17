@@ -23,10 +23,6 @@ class XK24(QObject):
 
     @pyqtSlot()
     def getKeysState(self):
-        "request current state from keyboard and read it"
-        request = [0, 177] + [0] * 34
-        binrequest = struct.pack('36B', *request)
-        # Не уверен, что нужно посылать report id - нужно уточнить
         self.keyboard.write(binrequest, b'\x06')
         binreport = self.keyboard.read(33)
         report = struct.unpack('33B', binreport)
