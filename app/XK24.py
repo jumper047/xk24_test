@@ -1,38 +1,61 @@
-import struct
+import time
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 
-import hidapi
+import hid
+
+VID = 1523
+PID = 1029
+# VID = 49395
+# PID = 673
 
 
 class XK24(QObject):
 
-    keyboardDataReceived = pyqtSignal(object)
+    connected = pyqtSignal()
+    finished = pyqtSignal()
+    reportReceived = pyqtSignal(object)
 
-    def __init__(self, vid=1523, pid=1029):
+    def __init__(self):
         super(XK24, self).__init__()
-        self.VID = vid
-        self.PID = pid
-
-    def initialize(self):
-        for device in hidapi.enumerate():
-            if device.vendor_id == self.VID and device.product_id == self.PID:
-                self.keyboard = hidapi.Device(info=device)
-                return True
-        return False
+        self.waitingKeyboard = False
+        self.pollingKeyboard = False
+        self.backlightQueue = []
+        self.thread = QThread()
+        self.moveToThread(self.thread)
+        self.thread.started.connect(self.connect)
+        self.connected.connect(self.runRWLoop)
+        self.finished.connect(self.thread.quit)
+        self.thread.start()
 
     @pyqtSlot()
-    def getKeysState(self):
-        self.keyboard.write(binrequest, b'\x06')
-        binreport = self.keyboard.read(33)
-        report = struct.unpack('33B', binreport)
-        self.keyboardDataReceived.emit(report[3:7])
+    def connect(self):
+        self.waitingKeyboard = True
+        while self.waitingKeyboard:
+            for device in hid.enumerate():
+                if device["product_id"] == PID and device["vendor_id"] == VID:
+                    self.keyboard = hid.device()
+                    self.keyboard.open(VID, PID)
+                    self.connected.emit()
+                    return None
+            time.sleep(1)
+        self.finished.emit()
 
-    @pyqtSlot(int, int, int)
-    def setBacklight(self, key, blue, red):
-        report = [0, 181, key, blue] + [0] * 32
-        binreport = struct.pack('36B', *report)
-        self.keyboard.write(binreport, b'\x0b')
-        report = [0, 181, key + 32, red] + [0] * 32
-        binreport = struct.pack('36B', *report)
-        self.keyboard.write(binreport, b'\x0b')
+    @pyqtSlot()
+    def runRWLoop(self):
+        self.pollingKeyboard = True
+        while self.pollingKeyboard:
+            inputReport = self.keyboard.read(33, 250)
+            if inputReport:
+                self.reportReceived.emit(inputReport[3:7])
+            if len(self.backlightQueue) > 0:
+                key, blue, red = self.backlightQueue.pop()
+                self.keyboard.write([0, 181, key, blue] + [0] * 32)
+                self.keyboard.write([0, 181, key + 32, red] + [0] * 32)
+            time.sleep(0.05)
+        self.keyboard.close()
+        self.finished.emit()
+
+    def closeConnection(self):
+        self.pollingKeyboard = False
+        self.waitingKeyboard = False

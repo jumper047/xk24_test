@@ -1,7 +1,6 @@
 from PyQt5.QtCore import QThread, QTimer, pyqtSlot
 from PyQt5.QtWidgets import QGridLayout, QWidget
 
-from app.ErrorWindow import ErrorWindow
 from app.VirtualKey import VirtualKey
 
 
@@ -9,29 +8,13 @@ class VirtualKeyboard(QWidget):
 
     def __init__(self, keyboard):
         super(VirtualKeyboard, self).__init__()
-        self.errWin = ErrorWindow()
         self.keyboard = keyboard
-        try:
-            if not self.keyboard.initialize():
-                self.errWin.showError("Клавиатура не подключена")
-                return None
-        except IOError:
-            self.errWin.showError("Ошибка связи с клавиатурой")
-            return None
-
         self.initUi()
 
-        self.kbdPollThread = QThread()
-        self.pollTimer = QTimer()
-        self.keyboard.moveToThread(self.kbdPollThread)
-
         for key in self.keys:
-            key.backlightChanged.connect(self.keyboard.setBacklight)
-        self.keyboard.keyboardDataReceived.connect(self.setKeysState)
-        self.pollTimer.timeout.connect(self.keyboard.getKeysState)
+            key.backlightChanged.connect(self.setBacklight)
+        self.keyboard.reportReceived.connect(self.setKeysState)
 
-        self.kbdPollThread.start()
-        self.pollTimer.start(200)
         self.show()
 
     def initUi(self):
@@ -58,3 +41,11 @@ class VirtualKeyboard(QWidget):
 
         for key, state in zip(self.keys, keys_state):
             key.setDown(bool(state))
+
+    def setBacklight(self, key, blue, red):
+        self.keyboard.backlightQueue.insert(0, [key, blue, red])
+
+    def closeEvent(self, event):
+        self.keyboard.closeConnection()
+        self.keyboard.thread.wait(2000)
+        super(VirtualKeyboard, self).closeEvent(event)

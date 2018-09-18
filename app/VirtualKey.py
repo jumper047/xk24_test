@@ -21,8 +21,6 @@ class VirtualKey(QPushButton):
         self.customContextMenuRequested.connect(self.showBacklightMenu)
         self.backlightMenu.triggered.connect(self.processBacklight)
 
-        self.currentState = "Выкл."
-
     @pyqtSlot(object)
     def showBacklightMenu(self, point):
         self.backlightMenu.popup(self.mapToGlobal(point))
@@ -35,9 +33,8 @@ class VirtualKey(QPushButton):
         colors4USB = {"Синий": [1, 0], "Красный": [0, 1], "Выкл.": [0, 0]}
         key = self.text()
         color = action.text()
-        if color != self.currentState:
-            self.setStyleSheet(colors4Button[action.text()])
-            self.backlightChanged.emit(int(key), *colors4USB[action.text()])
+        self.setStyleSheet(colors4Button[action.text()])
+        self.backlightChanged.emit(int(key), *colors4USB[action.text()])
 
     def eventFilter(self, obj, event):
         if event.type() in (QEvent.MouseButtonPress, QEvent.MouseButtonDblClick) and event.button() == Qt.LeftButton:
