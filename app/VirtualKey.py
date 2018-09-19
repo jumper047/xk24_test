@@ -21,11 +21,9 @@ class VirtualKey(QPushButton):
         self.customContextMenuRequested.connect(self.showBacklightMenu)
         self.backlightMenu.triggered.connect(self.processBacklight)
 
-    @pyqtSlot(object)
     def showBacklightMenu(self, point):
         self.backlightMenu.popup(self.mapToGlobal(point))
 
-    @pyqtSlot(object)
     def processBacklight(self, action):
         colors4Button = {"Синий": 'QPushButton {background-color: #4da6ff;}',
                          "Красный": 'QPushButton {background-color: #ff4d4d;}',

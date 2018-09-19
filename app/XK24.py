@@ -47,12 +47,11 @@ class XK24(QObject):
         while self.pollingKeyboard:
             inputReport = self.keyboard.read(33, 250)
             if inputReport:
-                self.reportReceived.emit(inputReport[3:7])
+                self.reportReceived.emit(inputReport[2:8])
             if len(self.backlightQueue) > 0:
                 key, blue, red = self.backlightQueue.pop()
                 self.keyboard.write([0, 181, key, blue] + [0] * 32)
                 self.keyboard.write([0, 181, key + 32, red] + [0] * 32)
-            time.sleep(0.05)
         self.keyboard.close()
         self.finished.emit()
 
